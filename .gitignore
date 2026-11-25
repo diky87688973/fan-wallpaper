@@ -1,0 +1,38 @@
+# 运行态配置：本机素材目录与开关状态，只入库 config.example.json
+config.json
+config.json.tmp
+
+# Python 派生
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# 工具缓存与覆盖率
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+coverage.json
+htmlcov/
+
+# 运行期产物
+*.log
+*.tmp
+*.bak
+*.orig
+*.rej
+*~
+
+# 编辑器与系统
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini

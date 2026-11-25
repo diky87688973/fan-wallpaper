@@ -1,0 +1,46 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements.lock
+
+      - name: 安装依赖与检查工具
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install "pytest>=8" "pytest-cov>=5" "ruff>=0.17"
+
+      - name: 静态检查
+        run: ruff check .
+
+      - name: 依赖声明一致性
+        run: python scripts/check_requirements.py
+
+      - name: 单元测试与覆盖率
+        run: pytest -q
+
+      - name: 按模块校验覆盖率下限
+        run: python scripts/check_coverage.py coverage.json

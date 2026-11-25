@@ -1,0 +1,7 @@
+{
+  "image_dir": "",
+  "interval_minutes": 5,
+  "order": "sequential",
+  "allow_video": true,
+  "muted": true
+}
