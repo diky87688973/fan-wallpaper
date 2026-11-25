@@ -8,6 +8,7 @@ import importlib.util
 import queue
 import sys
 import tkinter as tk
+import urllib.parse
 from ctypes import wintypes
 from dataclasses import replace as replace_config
 from pathlib import Path
@@ -42,6 +43,12 @@ from wallpaper.ui import WallpaperUI  # noqa: E402
 
 WATCH_MS = 2000
 HIDE_HINT = "已隐藏到托盘，双击图标恢复窗口；托盘「退出」才结束进程。"
+
+
+def _display_name(payload: str) -> str:
+    """事件里带的是回环 URL，取回可读文件名再写进日志。"""
+    tail = payload.rsplit("/", 1)[-1]
+    return urllib.parse.unquote(tail) or payload
 
 
 class WallpaperApp:
@@ -223,11 +230,11 @@ class WallpaperApp:
                 self._current_name = message
                 self.ui.log(f"已切换：{message}")
             elif kind == "loaded":
-                self.ui.log(f"已上屏：{message}")
+                self.ui.log(f"已上屏：{_display_name(message)}")
             elif kind == "ended":
-                self.ui.log(f"视频播完，切下一张：{message}")
+                self.ui.log(f"视频播完，切下一张：{_display_name(message)}")
             elif kind == "load_error":
-                self.ui.log(f"素材加载失败：{message}")
+                self.ui.log(f"素材加载失败：{_display_name(message)}")
             elif kind in ("page_not_ready", "script_error", "server_error"):
                 self.ui.log(f"页面异常：{message or kind}")
             elif kind == protocol.EVT_STDERR:

@@ -212,6 +212,18 @@ class QuietHandler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
+class QuietServer(http.server.ThreadingHTTPServer):
+    """回环服务：客户端中途断连是常态，不当异常上报；其余错误照常打。"""
+
+    daemon_threads = True
+
+    def handle_error(self, request, client_address):
+        error = sys.exc_info()[1]
+        if isinstance(error, (ConnectionAbortedError, ConnectionResetError, BrokenPipeError)):
+            return
+        super().handle_error(request, client_address)
+
+
 _media = {"server": None, "port": 0, "directory": ""}
 _media_lock = threading.Lock()
 
@@ -226,7 +238,7 @@ def serve_dir(directory: str) -> int:
             threading.Thread(target=old.shutdown, daemon=True).start()
         handler = functools.partial(QuietHandler, directory=directory)
         try:
-            server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+            server = QuietServer(("127.0.0.1", 0), handler)
         except OSError as exc:
             emit(protocol.EVT_SERVER_ERROR, "", str(exc))
             return 0
@@ -257,9 +269,12 @@ def main() -> int:
     ))
     # 主控用 UTF-8 写管道，这里必须按 UTF-8 读；
     # 否则中文路径会被按系统默认编码解码，路径直接错位、文件找不到。
+    # stderr 同样要设：它会被合并进 stdout 由主控按 UTF-8 解码，
+    # 不设就会把系统代码页的中文变成乱码。
     try:
         sys.stdin.reconfigure(encoding="utf-8")
         sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
     except (AttributeError, ValueError):
         pass
     bridge.emit = emit
