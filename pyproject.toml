@@ -3,7 +3,7 @@ name = "fan-wallpaper"
 version = "1.0.0"
 description = "Windows 桌面壁纸轮播，遮盖层实现，不修改系统壁纸"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "diky87688973" }]
 dependencies = [
@@ -13,11 +13,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.17"]
+dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.17", "tomli>=2; python_version < '3.11'"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py312"
+target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "W", "I", "B", "SIM", "RUF"]

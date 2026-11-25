@@ -8,8 +8,12 @@ from __future__ import annotations
 
 import re
 import sys
-import tomllib
 from pathlib import Path
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10 尚未内置 tomllib
+    import tomli as tomllib
 
 # CI 的 Windows runner 默认 stdout 是 cp1252，打印中文会抛 UnicodeEncodeError
 if hasattr(sys.stdout, "reconfigure"):

@@ -5,7 +5,7 @@ Windows 桌面壁纸轮播工具，图片与视频都能轮播。桌面内容由
 ## 环境
 
 - Windows 10 / 11
-- Python 3.12 或更高
+- Python 3.10 或更高
 - Microsoft Edge WebView2 Runtime（Windows 11 自带，Windows 10 可能需单独安装）
 
 ## 安装
