@@ -9,6 +9,7 @@ from __future__ import annotations
 import contextlib
 import io
 
+from wallpaper import wallview
 from wallpaper.wallview import QuietServer
 
 
@@ -34,3 +35,10 @@ def test_other_errors_are_still_reported():
     output = _handle(RuntimeError("真的出错了"))
     assert "RuntimeError" in output
     assert "真的出错了" in output
+
+
+def test_attach_failure_reports_field_snapshot():
+    """挂载失败时必须带上 hwnd 等现场信息，便于下次直接定位。"""
+    message = wallview.attach(0)
+    assert message
+    assert "hwnd=0" in message

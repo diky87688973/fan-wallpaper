@@ -159,19 +159,37 @@ def emit(name: str, path: str = "", detail: str = "") -> None:
 def attach(hwnd: int) -> str:
     host = find_wallpaper_layer()
     if not host:
-        return "找不到 WorkerW"
+        return f"找不到 WorkerW（hwnd={hwnd} 0x{hwnd:X}）"
+
     style = user32.GetWindowLongW(hwnd, GWL_STYLE)
-    user32.SetWindowLongW(hwnd, GWL_STYLE,
-                          (style & ~WS_POPUP & ~WS_DECORATION) | WS_CHILD)
+    style_error = ctypes.get_last_error()
+    new_style = (style & ~WS_POPUP & ~WS_DECORATION) | WS_CHILD
+    style_ret = user32.SetWindowLongW(hwnd, GWL_STYLE, new_style)
+    style_set_error = ctypes.get_last_error()
+
     # 窗口创建时是顶层窗口，已在任务栏登记了按钮；改成子窗口不会撤销它，
     # 必须显式标成工具窗口（并去掉 APPWINDOW），任务栏才会忽略。
     exstyle = user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
-    user32.SetWindowLongW(hwnd, GWL_EXSTYLE,
-                          (exstyle | WS_EX_TOOLWINDOW) & ~WS_EX_APPWINDOW)
-    user32.SetParent(hwnd, host)
+    new_exstyle = (exstyle | WS_EX_TOOLWINDOW) & ~WS_EX_APPWINDOW
+    exstyle_ret = user32.SetWindowLongW(hwnd, GWL_EXSTYLE, new_exstyle)
+
+    parent_ret = user32.SetParent(hwnd, host)
+    parent_error = ctypes.get_last_error()
     actual = user32.GetParent(hwnd)
     if actual != host:
-        return f"SetParent 失败（期望 {host}，实际 {actual}）"
+        # 这条失败路径只出现过一次且未能复现，所以把当时全部现场记下来
+        return (
+            "SetParent 失败\n"
+            f"  hwnd={hwnd} (0x{hwnd:X}, {hwnd.bit_length()} bit)  "
+            f"host={host} (0x{host:X})\n"
+            f"  读回父窗口={actual}\n"
+            f"  style {style:#010x} -> {new_style:#010x}"
+            f"（SetWindowLongW 返回 {style_ret}，错误码 {style_set_error}，"
+            f"读取前错误码 {style_error}）\n"
+            f"  exstyle {exstyle:#010x} -> {new_exstyle:#010x}"
+            f"（SetWindowLongW 返回 {exstyle_ret}）\n"
+            f"  SetParent 返回 {parent_ret}，错误码 {parent_error}"
+        )
     # 取消置顶：fullscreen 创建时被设成 TOPMOST，留着就会盖住图标和任务栏。
     user32.SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0,
                         SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE)
