@@ -114,6 +114,8 @@ user32.SetWindowLongW.restype = ctypes.c_uint32
 user32.SetWindowPos.argtypes = [wintypes.HWND, wintypes.HWND, ctypes.c_int, ctypes.c_int,
                                 ctypes.c_int, ctypes.c_int, ctypes.c_uint]
 user32.SetWindowPos.restype = wintypes.BOOL
+user32.ShowWindow.argtypes = [wintypes.HWND, ctypes.c_int]
+user32.ShowWindow.restype = wintypes.BOOL
 user32.GetClientRect.argtypes = [wintypes.HWND, ctypes.POINTER(wintypes.RECT)]
 user32.GetClientRect.restype = wintypes.BOOL
 
@@ -130,9 +132,13 @@ SWP_NOACTIVATE = 0x0010
 SWP_SHOWWINDOW = 0x0040
 SWP_NOMOVE = 0x0002
 SWP_NOSIZE = 0x0001
+SW_HIDE = 0
 # SetWindowPos 的 z 序常量本身就是 HWND，负数要按无符号指针值传
 HWND_BOTTOM = ctypes.c_void_p(1)
 HWND_NOTOPMOST = ctypes.c_void_p(0xFFFFFFFFFFFFFFFE)
+
+ATTACH_ATTEMPTS = 3
+ATTACH_RETRY_DELAY_SECONDS = 0.5
 
 
 class Bridge:
@@ -214,6 +220,26 @@ def place_on_screen(hwnd: int) -> None:
     user32.SetWindowPos(hwnd, HWND_BOTTOM, 0, 0,
                         rect.right - rect.left, rect.bottom - rect.top,
                         SWP_FRAMECHANGED | SWP_NOACTIVATE | SWP_SHOWWINDOW)
+
+
+def attach_with_retry(window, hwnd: int) -> str:
+    """把窗口挂到壁纸层，挂完读回校验。
+
+    窗口刚创建时父窗口会被后续初始化重置，只挂一次会白挂；
+    读回不是壁纸层就等一拍、重新取句柄再挂。
+    """
+    detail = ""
+    for attempt in range(ATTACH_ATTEMPTS):
+        detail = attach(hwnd)
+        if not detail:
+            return ""
+        if attempt + 1 >= ATTACH_ATTEMPTS:
+            break
+        time.sleep(ATTACH_RETRY_DELAY_SECONDS)
+        current = window_handle(window)
+        if current:
+            hwnd = current
+    return detail
 
 
 def window_handle(window):
@@ -354,7 +380,14 @@ def main() -> int:
             state["hwnd"] = hwnd
         emit(protocol.EVT_HANDLE, "", str(hwnd))
         if hwnd:
-            emit(protocol.EVT_ATTACHED, "", attach(hwnd))
+            detail = attach_with_retry(window, hwnd)
+            final_hwnd = window_handle(window) or hwnd
+            with lock:
+                state["hwnd"] = final_hwnd
+            emit(protocol.EVT_ATTACHED, "", detail)
+            if detail:
+                # 挂不上时全屏窗口会盖住桌面图标，宁可不显示
+                user32.ShowWindow(final_hwnd, SW_HIDE)
         wait_page_ready()
         emit(protocol.EVT_READY)
 
