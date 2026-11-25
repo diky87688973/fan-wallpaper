@@ -12,6 +12,9 @@ permissions:
 jobs:
   check:
     runs-on: windows-latest
+    env:
+      # runner 默认 stdout 是 cp1252，脚本与测试输出中文会抛 UnicodeEncodeError
+      PYTHONIOENCODING: utf-8
     strategy:
       fail-fast: false
       matrix:

@@ -11,6 +11,10 @@ import sys
 import tomllib
 from pathlib import Path
 
+# CI 的 Windows runner 默认 stdout 是 cp1252，打印中文会抛 UnicodeEncodeError
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 ROOT = Path(__file__).resolve().parent.parent
 
 

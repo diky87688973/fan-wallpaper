@@ -10,6 +10,10 @@ import json
 import sys
 from pathlib import Path
 
+# CI 的 Windows runner 默认 stdout 是 cp1252，打印中文会抛 UnicodeEncodeError
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 FLOORS = {
     "wallpaper/__init__.py": 100.0,
     "wallpaper/backend.py": 78.0,
